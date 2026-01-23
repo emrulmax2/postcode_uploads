@@ -14,6 +14,15 @@ npm install
 npm run build
 rm -rf node_modules
 
+# Ensure public/build is available under the public_html directory
+mkdir -p /home/postcodeslccac/public_html
+if [ ! -L /home/postcodeslccac/public_html/build ]; then
+	ln -s /home/postcodeslccac/postcode_uploads/public/build /home/postcodeslccac/public_html/build
+fi
+if [ ! -L /home/postcodeslccac/public_html/storage ]; then
+	ln -s /home/postcodeslccac/postcode_uploads/public/storage /home/postcodeslccac/public_html/storage
+fi
+
 # Run database migrations
 php artisan migrate --force
 
