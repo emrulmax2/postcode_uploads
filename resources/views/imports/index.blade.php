@@ -40,44 +40,11 @@
 
             <div class="bg-white shadow-sm rounded-lg p-6">
                 <h3 class="text-lg font-semibold mb-4">Recent Imports</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead>
-                            <tr class="text-left border-b">
-                                <th class="py-2">File</th>
-                                <th class="py-2">Status</th>
-                                <th class="py-2">Progress</th>
-                                <th class="py-2">Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($imports as $import)
-                                <tr class="border-b">
-                                    <td class="py-2">{{ $import->original_name }}</td>
-                                    <td class="py-2 capitalize">{{ $import->status }}</td>
-                                    <td class="py-2">
-                                        {{ $import->processed_rows }}
-                                        @if ($import->total_rows)
-                                            / {{ $import->total_rows }}
-                                        @endif
-                                    </td>
-                                    <td class="py-2">{{ $import->updated_at->diffForHumans() }}</td>
-                                </tr>
-                                @if ($import->error)
-                                    <tr class="border-b bg-red-50">
-                                        <td colspan="4" class="py-2 text-red-600">
-                                            {{ $import->error }}
-                                        </td>
-                                    </tr>
-                                @endif
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="py-4 text-gray-500">No imports yet.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                <div
+                    id="imports-status"
+                    data-imports='@json($imports->items())'
+                    data-poll-interval="5000"
+                ></div>
 
                 <div class="mt-4">
                     {{ $imports->links() }}
