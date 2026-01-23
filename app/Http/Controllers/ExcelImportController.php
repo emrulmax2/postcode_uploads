@@ -75,7 +75,10 @@ class ExcelImportController extends Controller
                     ->withErrors(['file' => 'No CSV file was found in the uploaded zip.']);
             }
 
-            $absoluteCsvPath = Storage::disk('local')->path($csvRelativePath);
+            $diskRoot = rtrim(Storage::disk('local')->path(''), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+            $absoluteCsvPath = Str::startsWith($csvRelativePath, [$diskRoot, DIRECTORY_SEPARATOR])
+                ? $csvRelativePath
+                : Storage::disk('local')->path($csvRelativePath);
 
             if (!file_exists($absoluteCsvPath)) {
                 $import->update([
@@ -105,14 +108,20 @@ class ExcelImportController extends Controller
     private function findFirstCsvPath(string $extractDir): ?string
     {
         $absoluteExtractPath = Storage::disk('local')->path($extractDir);
+        $diskRoot = rtrim(Storage::disk('local')->path(''), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($absoluteExtractPath, \FilesystemIterator::SKIP_DOTS)
         );
 
         foreach ($iterator as $file) {
             if ($file->isFile() && Str::endsWith(Str::lower($file->getFilename()), '.csv')) {
-                $relative = Str::after($file->getPathname(), Storage::disk('local')->path('') . DIRECTORY_SEPARATOR);
-                return str_replace('\\', '/', $relative);
+                $pathname = $file->getPathname();
+                if (Str::startsWith($pathname, $diskRoot)) {
+                    $relative = substr($pathname, strlen($diskRoot));
+                    return str_replace('\\', '/', $relative);
+                }
+
+                return str_replace('\\', '/', $pathname);
             }
         }
 
