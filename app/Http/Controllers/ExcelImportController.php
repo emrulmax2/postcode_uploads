@@ -32,6 +32,7 @@ class ExcelImportController extends Controller
 
         $file = $validated['file'];
         $path = $file->store('imports');
+        $absolutePath = Storage::disk('local')->path($path);
 
         $import = Import::create([
             'user_id' => $request->user()->id,
@@ -74,13 +75,26 @@ class ExcelImportController extends Controller
                     ->withErrors(['file' => 'No CSV file was found in the uploaded zip.']);
             }
 
+            $absoluteCsvPath = Storage::disk('local')->path($csvRelativePath);
+
+            if (!file_exists($absoluteCsvPath)) {
+                $import->update([
+                    'status' => 'failed',
+                    'error' => 'CSV file was not found after extraction.',
+                ]);
+
+                return redirect()
+                    ->route('imports.index')
+                    ->withErrors(['file' => 'CSV file was not found after extraction.']);
+            }
+
             $import->update([
                 'stored_path' => $csvRelativePath,
             ]);
 
-            Excel::queueImport(new PostcodeCsvImport($import->id), $csvRelativePath, 'local');
+            Excel::queueImport(new PostcodeCsvImport($import->id), $absoluteCsvPath);
         } else {
-            Excel::queueImport(new PostcodeCsvImport($import->id), $path);
+            Excel::queueImport(new PostcodeCsvImport($import->id), $absolutePath);
         }
 
         return redirect()
