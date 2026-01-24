@@ -17,6 +17,12 @@ use Maatwebsite\Excel\Events\ImportFailed;
 
 class LargeExcelImport implements ToCollection, WithHeadingRow, WithChunkReading, WithBatchInserts, ShouldQueueWithoutChain, WithEvents
 {
+    public int $tries = 3;
+
+    public int $timeout = 1200;
+
+    public array $backoff = [60, 120, 300];
+
     public function __construct(private readonly int $importId)
     {
     }
@@ -46,7 +52,7 @@ class LargeExcelImport implements ToCollection, WithHeadingRow, WithChunkReading
 
     public function chunkSize(): int
     {
-        return 1000;
+        return 2500;
     }
 
     public function batchSize(): int

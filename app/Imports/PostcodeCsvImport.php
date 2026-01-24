@@ -17,6 +17,12 @@ use Maatwebsite\Excel\Events\ImportFailed;
 
 class PostcodeCsvImport implements ToCollection, WithHeadingRow, WithChunkReading, WithBatchInserts, ShouldQueueWithoutChain, WithEvents
 {
+    public int $tries = 3;
+
+    public int $timeout = 1200;
+
+    public array $backoff = [60, 120, 300];
+
     public function __construct(private readonly int $importId)
     {
     }
