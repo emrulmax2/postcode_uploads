@@ -4,6 +4,7 @@ use App\Imports\PostcodeCsvImport;
 use App\Models\Import;
 use App\Models\User;
 use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
@@ -46,3 +47,5 @@ Artisan::command('imports:csv {path} {--user=}', function () {
 
     return 0;
 })->purpose('Queue a CSV import from a local file path');
+
+Schedule::command('addresses:sync-polar4')->weeklyOn(1, '02:00');
