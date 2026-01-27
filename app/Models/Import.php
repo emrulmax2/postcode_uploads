@@ -16,6 +16,7 @@ class Import extends Model
         'original_name',
         'stored_path',
         'status',
+        'batch_id',
         'total_rows',
         'processed_rows',
         'failed_rows',

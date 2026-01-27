@@ -52,7 +52,7 @@ class LargeExcelImport implements ToCollection, WithHeadingRow, WithChunkReading
 
     public function chunkSize(): int
     {
-        return 2500;
+        return 1500;
     }
 
     public function batchSize(): int

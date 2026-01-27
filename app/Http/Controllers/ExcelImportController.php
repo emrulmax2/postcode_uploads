@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Imports\PostcodeCsvImport;
+use App\Jobs\ProcessPostcodeCsvChunk;
 use App\Models\Import;
+use Illuminate\Bus\Batch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
-use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 //excellent works
 class ExcelImportController extends Controller
 {
@@ -95,9 +97,9 @@ class ExcelImportController extends Controller
                 'stored_path' => $csvRelativePath,
             ]);
 
-            Excel::queueImport(new PostcodeCsvImport($import->id), $absoluteCsvPath);
+            $this->dispatchBatchImport($import, $absoluteCsvPath);
         } else {
-            Excel::queueImport(new PostcodeCsvImport($import->id), $absolutePath);
+            $this->dispatchBatchImport($import, $absolutePath);
         }
 
         return redirect()
@@ -128,11 +130,142 @@ class ExcelImportController extends Controller
         return null;
     }
 
+    private function dispatchBatchImport(Import $import, string $absoluteCsvPath): void
+    {
+        [$header, $totalRows] = $this->getCsvHeaderAndRowCount($absoluteCsvPath);
+
+        if ($totalRows === 0) {
+            $import->update([
+                'status' => 'failed',
+                'error' => 'The CSV file is empty or contains no data rows.',
+            ]);
+
+            return;
+        }
+
+        $jobs = $this->buildChunkJobs($import->id, $absoluteCsvPath, $header, $totalRows);
+
+        $batch = Bus::batch($jobs)
+            ->name("Import #{$import->id}")
+            ->then(function () use ($import): void {
+                $import->update([
+                    'status' => 'completed',
+                ]);
+            })
+            ->catch(function (Batch $batch, Throwable $exception) use ($import): void {
+                $import->update([
+                    'status' => 'failed',
+                    'error' => $exception->getMessage(),
+                ]);
+            })
+            ->dispatch();
+
+        $import->update([
+            'status' => 'processing',
+            'total_rows' => $totalRows,
+            'batch_id' => $batch->id,
+        ]);
+    }
+
+    /**
+     * @return array{0: array<int, string>, 1: int}
+     */
+    private function getCsvHeaderAndRowCount(string $absoluteCsvPath): array
+    {
+        $file = new \SplFileObject($absoluteCsvPath);
+        $file->setFlags(\SplFileObject::READ_CSV | \SplFileObject::SKIP_EMPTY);
+
+        $header = $file->fgetcsv();
+
+        if ($header === false || $header === [null]) {
+            return [[], 0];
+        }
+
+        $header = array_map(static function ($value) {
+            $value = $value === null ? '' : (string) $value;
+            $value = trim($value);
+
+            return $value;
+        }, $header);
+
+        if ($header !== [] && $header[0] !== null) {
+            $header[0] = ltrim((string) $header[0], "\xEF\xBB\xBF");
+        }
+
+        $rowCount = 0;
+
+        while (!$file->eof()) {
+            $row = $file->fgetcsv();
+
+            if ($row === false || $row === [null] || $this->isEmptyCsvRow($row)) {
+                continue;
+            }
+
+            $rowCount++;
+        }
+
+        return [$header, $rowCount];
+    }
+
+    /**
+     * @param array<int, string|null> $row
+     */
+    private function isEmptyCsvRow(array $row): bool
+    {
+        foreach ($row as $value) {
+            if ($value !== null && trim((string) $value) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param array<int, string> $header
+     * @return array<int, ProcessPostcodeCsvChunk>
+     */
+    private function buildChunkJobs(int $importId, string $absoluteCsvPath, array $header, int $totalRows): array
+    {
+        $chunkSize = 5000;
+        $jobs = [];
+
+        for ($offset = 0; $offset < $totalRows; $offset += $chunkSize) {
+            $startLine = 1 + $offset;
+            $endLine = min($totalRows, $offset + $chunkSize);
+
+            $jobs[] = new ProcessPostcodeCsvChunk(
+                $importId,
+                $absoluteCsvPath,
+                $header,
+                $startLine,
+                $endLine
+            );
+        }
+
+        return $jobs;
+    }
+
     public function show(Request $request, Import $import): Response
     {
         if ($import->user_id !== $request->user()->id) {
             abort(403);
         }
+
+        $batch = $import->batch_id ? Bus::findBatch($import->batch_id) : null;
+
+        $batchSummary = $batch
+            ? [
+                'id' => $batch->id,
+                'total_jobs' => $batch->totalJobs,
+                'pending_jobs' => $batch->pendingJobs,
+                'processed_jobs' => $batch->processedJobs(),
+                'failed_jobs' => $batch->failedJobs,
+                'progress' => $batch->progress(),
+                'finished_at' => $batch->finishedAt?->toDateTimeString(),
+                'cancelled' => $batch->cancelled(),
+            ]
+            : null;
 
         return response()->json([
             'id' => $import->id,
@@ -141,6 +274,7 @@ class ExcelImportController extends Controller
             'processed_rows' => $import->processed_rows,
             'failed_rows' => $import->failed_rows,
             'error' => $import->error,
+            'batch' => $batchSummary,
             'created_at' => $import->created_at,
             'updated_at' => $import->updated_at,
         ]);
