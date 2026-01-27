@@ -10,7 +10,7 @@ class SyncAddressPolar4Quantile extends Command
 {
     protected $signature = 'addresses:sync-polar4
         {--connection=secondary : The secondary DB connection name}
-        {--table=address : The address table name}
+        {--table=addresses : The address table name}
         {--post-code=post_code : The address table postcode column}
         {--target=polar_4_quantile : The address table target column}
         {--chunk=1000 : Chunk size for processing postcode records}
