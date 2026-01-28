@@ -49,3 +49,4 @@ Artisan::command('imports:csv {path} {--user=}', function () {
 })->purpose('Queue a CSV import from a local file path');
 
 Schedule::command('addresses:sync-polar4')->weeklyOn(1, '02:00');
+Schedule::command('addresses:sync-imd-lsoa25')->weeklyOn(1, '02:30');
