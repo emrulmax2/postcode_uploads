@@ -15,6 +15,7 @@ class Import extends Model
         'user_id',
         'original_name',
         'stored_path',
+        'import_type',
         'status',
         'batch_id',
         'total_rows',
