@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ExcelImportController;
+use App\Http\Controllers\ImdLsoa25ImportController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/imports', [ExcelImportController::class, 'index'])->name('imports.index');
     Route::post('/imports', [ExcelImportController::class, 'store'])->name('imports.store');
     Route::get('/imports/{import}', [ExcelImportController::class, 'show'])->name('imports.show');
+
+    Route::get('/imd-lsoa25-imports', [ImdLsoa25ImportController::class, 'index'])->name('imd-lsoa25.imports.index');
+    Route::post('/imd-lsoa25-imports', [ImdLsoa25ImportController::class, 'store'])->name('imd-lsoa25.imports.store');
+    Route::get('/imd-lsoa25-imports/{import}', [ImdLsoa25ImportController::class, 'show'])->name('imd-lsoa25.imports.show');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

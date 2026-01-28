@@ -11,9 +11,14 @@
                 <div class="p-6 text-gray-900">
                     <div class="space-y-4">
                         <div>{{ __("You're logged in!") }}</div>
-                        <a href="{{ route('imports.index') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded">
-                            Go to Excel Imports
-                        </a>
+                        <div class="flex flex-wrap gap-3">
+                            <a href="{{ route('imports.index') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded">
+                                Go to Post code Imports
+                            </a>
+                            <a href="{{ route('imd-lsoa25.imports.index') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded">
+                                Go to IMD 2025 Imports
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
