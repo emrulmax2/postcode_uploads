@@ -20,6 +20,7 @@ class ExcelImportController extends Controller
     {
         $imports = Import::query()
             ->where('user_id', $request->user()->id)
+            ->where('import_type', 'postcode_records')
             ->latest()
             ->paginate(10);
 
@@ -38,6 +39,7 @@ class ExcelImportController extends Controller
 
         $import = Import::create([
             'user_id' => $request->user()->id,
+            'import_type' => 'postcode_records',
             'original_name' => $file->getClientOriginalName(),
             'stored_path' => $path,
             'status' => 'queued',

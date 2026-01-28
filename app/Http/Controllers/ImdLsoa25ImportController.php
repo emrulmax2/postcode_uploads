@@ -20,6 +20,7 @@ class ImdLsoa25ImportController extends Controller
     {
         $imports = Import::query()
             ->where('user_id', $request->user()->id)
+            ->where('import_type', 'imd_lsoa25')
             ->latest()
             ->paginate(10);
 
@@ -38,6 +39,7 @@ class ImdLsoa25ImportController extends Controller
 
         $import = Import::create([
             'user_id' => $request->user()->id,
+            'import_type' => 'imd_lsoa25',
             'original_name' => $file->getClientOriginalName(),
             'stored_path' => $path,
             'status' => 'queued',
